@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 
 from atomdeeplit import metadata, triage, zotero
-from atomdeeplit.__main__ import SCHEMA, apply
+from atomdeeplit.__main__ import SCHEMA, apply, verify_item
 
 
 class WorkflowTests(unittest.TestCase):
@@ -31,6 +31,14 @@ class WorkflowTests(unittest.TestCase):
             triage.validate_suggestions(result, {1: {"COLL0001"}})
         result["suggestions"][0]["collection_key"] = "COLL0001"
         self.assertTrue(triage.validate_suggestions(result, {1: {"COLL0001"}})[1]["priority"])
+
+    def test_arxiv_version_verified_from_saved_url(self):
+        planned = {"itemType": "preprint", "archiveID": "2601.00001v1", "DOI": "",
+                   "collections": ["COLL0001"], "tags": []}
+        actual = {"itemType": "preprint", "url": "https://arxiv.org/abs/2601.00001v1",
+                  "collections": ["COLL0001"], "tags": []}
+        self.assertTrue(verify_item(actual, planned))
+        self.assertFalse(verify_item({**actual, "url": "https://arxiv.org/abs/2601.00001v2"}, planned))
 
     def test_apply_checks_duplicates_and_uses_explicit_priority(self):
         record = {"doi": "10.1234/example", "title": "Test article", "type": "journal-article"}

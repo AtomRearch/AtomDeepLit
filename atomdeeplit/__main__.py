@@ -151,6 +151,18 @@ def make_item(row, collection, priority, config):
     return item
 
 
+def verify_item(item, planned):
+    arxiv = planned.get("archiveID")
+    stored_arxiv = item.get("archiveID") or metadata.arxiv_id(item.get("url", ""))
+    return (
+        item.get("itemType") == planned["itemType"]
+        and metadata.normalize_doi(item.get("DOI")) == metadata.normalize_doi(planned["DOI"])
+        and item.get("collections") == planned["collections"]
+        and (not arxiv or stored_arxiv == arxiv)
+        and {tag["tag"] for tag in planned["tags"]} <= {tag["tag"] for tag in item.get("tags", [])}
+    )
+
+
 def apply(args, config):
     plan, rows = read_plan(args.plan)
     selected = row_numbers(args.select)
@@ -218,13 +230,7 @@ def apply(args, config):
         if "key" not in outcome:
             continue
         item = actual.get(outcome["key"], {})
-        verified = (
-            item.get("itemType") == planned["itemType"]
-            and metadata.normalize_doi(item.get("DOI")) == metadata.normalize_doi(planned["DOI"])
-            and item.get("collections") == planned["collections"]
-            and (not planned.get("archiveID") or item.get("archiveID") == planned["archiveID"])
-            and {tag["tag"] for tag in planned["tags"]} <= {tag["tag"] for tag in item.get("tags", [])}
-        )
+        verified = verify_item(item, planned)
         outcome["verified"] = verified
         if not verified:
             print(f"Row {outcome['row']} was saved as {outcome['key']}; metadata needs review.", file=sys.stderr)
