@@ -1,0 +1,5 @@
+model = "deepseek-flash"
+focus = ["固体电解质界面膜（SEI）", "锂离子溶剂化结构"]
+priority_tag = "💥"
+# Uncomment if the library uses this tag and you want it on every new item.
+# unread_tag = "❎"
