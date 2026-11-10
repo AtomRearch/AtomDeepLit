@@ -4,10 +4,13 @@ from collections import defaultdict
 from datetime import datetime
 import json
 import re
+import sys
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import ProxyHandler, Request, build_opener
 from zipfile import ZIP_DEFLATED, ZipFile
 
+from . import authorization
 from .metadata import arxiv_id, doi_from_url, normalize_doi, title_key, url_key
 
 
@@ -17,7 +20,11 @@ OPENER = build_opener(ProxyHandler({}))
 
 
 def request(route, payload=None, headers=None, timeout=45):
-    req = Request(BASE + route, headers=headers or {})
+    headers = dict(headers or {})
+    key = headers.pop("Zotero-API-Key", None)
+    req = Request(BASE + route, headers=headers)
+    if key:
+        req.add_unredirected_header("Zotero-API-Key", key)
     if payload is not None:
         req.data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         req.add_header("Content-Type", "application/json")
@@ -130,15 +137,33 @@ def create_items(stamp, payload):
     server, version = stamp
     if not server or version is None:
         raise ValueError("Writing requires Zotero Desktop 10+ and its local API")
-    print("Approve one-time access in Zotero when the AtomDeepLit dialog appears.", flush=True)
+    headers = {"Zotero-Server-ID": server, "If-Unmodified-Since-Version": version}
+    try:
+        cached_key = authorization.load(server)
+    except (OSError, ValueError):
+        print("Saved Zotero authorization is unreadable. Requesting access again.", file=sys.stderr)
+        cached_key = None
+    if cached_key:
+        try:
+            return request(LIBRARY + "items", payload, {**headers, "Zotero-API-Key": cached_key})[0]
+        except HTTPError as error:
+            challenge = error.headers.get("WWW-Authenticate", "") if error.headers else ""
+            if error.code != 401 or not challenge.startswith("Zotero-API-Key"):
+                raise
+            error.close()
+
+    print("In Zotero, choose Allow once or Always Allow to reuse authorization.", flush=True)
     auth, _ = request("local/authorize", {"appName": "AtomDeepLit"},
                       {"Zotero-Server-ID": server}, timeout=180)
     if identity() != stamp:
         raise ValueError("Zotero changed while waiting for authorization")
-    return request(LIBRARY + "items", payload, {
-        "Zotero-Server-ID": server, "Zotero-API-Key": auth["key"],
-        "If-Unmodified-Since-Version": version,
-    })[0]
+    key = auth["key"]
+    if auth.get("remember") is True:
+        try:
+            authorization.save(server, key)
+        except (OSError, ValueError):
+            print("Zotero authorization could not be saved. This write can still continue.", file=sys.stderr)
+    return request(LIBRARY + "items", payload, {**headers, "Zotero-API-Key": key})[0]
 
 
 def pdf_count(key):

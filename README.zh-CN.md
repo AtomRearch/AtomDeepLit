@@ -24,7 +24,9 @@ python -X utf8 -m atomdeeplit preview --ai --output plan.json
 python -X utf8 -m atomdeeplit apply plan.json --select 1,3 --priority 3 --use-suggestions
 ```
 
-`--select` 确认要入库的行号，`--priority` 确认要打重点标签的行号。`--use-suggestions` 选择使用预览中的集合建议，`--collection 3=COLLKEY` 可以覆盖第 3 行的集合。没有选定集合时，条目进入个人文库根。工具重新查重，显示写入内容，保存带完整性检查的写入前元数据快照，然后通过 Zotero 的一次性授权写入。首批写入最多 20 条。
+`--select` 确认要入库的行号，`--priority` 确认要打重点标签的行号。`--use-suggestions` 选择使用预览中的集合建议，`--collection 3=COLLKEY` 可以覆盖第 3 行的集合。没有选定集合时，条目进入个人文库根。工具重新查重并显示写入内容。输入 `APPLY` 后，保存带完整性检查的写入前元数据快照，再执行写入。每批最多 20 条。
+
+Zotero 弹窗中的「允许」只授权当前写入。「始终允许」让 AtomDeepLit 0.1.1 保存本机凭据，并在同一个 Zotero 实例中复用。Windows 使用 DPAPI 加密，macOS 和 Linux 使用仅当前用户可读写的文件。从 0.1.0 升级后可能需要再授权一次。每批入库仍须确认。可在 Zotero 高级设置中清除写入授权。
 
 ```powershell
 python -X utf8 -m atomdeeplit attachments receipt.json

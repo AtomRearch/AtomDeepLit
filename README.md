@@ -34,7 +34,9 @@ python -X utf8 -m atomdeeplit apply plan.json --select 1,3 --priority 3 --use-su
 
 `--select` chooses which rows to import, and `--priority` marks rows with the configured priority tag. `--use-suggestions` applies the proposed collections. Use `--collection 3=COLLKEY` to override the collection for row 3. An item with no collection selection goes to My Library.
 
-AtomDeepLit checks for duplicates again, displays the pending changes, and takes a pre-write metadata snapshot. Type `APPLY` and approve the one-time authorization in Zotero. Each import batch is limited to 20 items.
+AtomDeepLit checks for duplicates again and displays the pending changes. Type `APPLY` to take a pre-write metadata snapshot and import the batch. Each batch is limited to 20 items.
+
+When Zotero asks for access, choose **Allow** for the current write or **Always Allow** to reuse authorization for the same Zotero instance. AtomDeepLit 0.1.1 saves a remembered key locally, protected by Windows DPAPI or owner-only file permissions on macOS and Linux. An upgrade from 0.1.0 may require one new authorization. Each import still requires batch confirmation. To revoke remembered keys, use **Clear Write Authorizations** in Zotero's advanced settings.
 
 ### Check PDF attachments
 
