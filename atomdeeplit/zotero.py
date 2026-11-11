@@ -154,15 +154,15 @@ def create_items(stamp, payload):
 
     print("In Zotero, choose Allow once or Always Allow to reuse authorization.", flush=True)
     auth, _ = request("local/authorize", {"appName": "AtomDeepLit"},
-                      {"Zotero-Server-ID": server}, timeout=180)
-    if identity() != stamp:
-        raise ValueError("Zotero changed while waiting for authorization")
+                      {"Zotero-Server-ID": server}, timeout=None)
     key = auth["key"]
     if auth.get("remember") is True:
         try:
             authorization.save(server, key)
         except (OSError, ValueError):
             print("Zotero authorization could not be saved. This write can still continue.", file=sys.stderr)
+    if identity() != stamp:
+        raise ValueError("Zotero changed while waiting for authorization. Run the import again.")
     return request(LIBRARY + "items", payload, {**headers, "Zotero-API-Key": key})[0]
 
 

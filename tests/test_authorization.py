@@ -48,6 +48,19 @@ class AuthorizationTests(unittest.TestCase):
             zotero.create_items(stamp, [])
             save.assert_not_called()
 
+    def test_remembered_grant_is_saved_even_if_library_changes(self):
+        stamp = ("sample-server", "5")
+        with patch.object(authorization, "load", return_value=None), \
+                patch.object(authorization, "save") as save, \
+                patch.object(zotero, "identity", return_value=("sample-server", "6")), \
+                patch.object(zotero, "request", return_value=({"key": "A" * 32, "remember": True}, {})) as request, \
+                redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(ValueError, "changed while waiting"):
+                zotero.create_items(stamp, [])
+            request.assert_called_once()
+            self.assertIsNone(request.call_args.kwargs["timeout"])
+            save.assert_called_once_with(stamp[0], "A" * 32)
+
     def test_revoked_key_requests_one_new_grant(self):
         stamp = ("sample-server", "5")
         revoked = HTTPError("http://127.0.0.1", 401, "Unauthorized",
